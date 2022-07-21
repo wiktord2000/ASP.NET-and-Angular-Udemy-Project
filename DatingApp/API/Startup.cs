@@ -35,6 +35,8 @@ namespace API
                 // Place for connection string (taks the specific section from configuration file: appsettings.Developement.json)
                 options.UseSqlite(_config.GetConnectionString("DefaultConnection"));
             });
+            // Add cors (allow to using api via specific frontend aplication)
+            services.AddCors();
 
             services.AddControllers();
             services.AddSwaggerGen(c =>
@@ -56,6 +58,10 @@ namespace API
             app.UseHttpsRedirection();
 
             app.UseRouting();
+            
+            // Define who can retive the data from api it could be domain, schame, or port. 
+            // Allow access to api from specific port at localhost (It have to be between UseRouting and UseAuthorization) 
+            app.UseCors(x => x.AllowAnyHeader().AllowAnyMethod().WithOrigins("https://localhost:4200"));
 
             app.UseAuthorization();
 
