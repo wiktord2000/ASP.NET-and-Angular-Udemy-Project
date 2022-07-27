@@ -1,10 +1,11 @@
+import { ErrorInterceptor } from './_interceptors/error.interceptor';
 
 import { NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
-import { HttpClientModule } from "@angular/common/http"
+import { HttpClientModule, HTTP_INTERCEPTORS } from "@angular/common/http"
 import { BrowserAnimationsModule } from "@angular/platform-browser/animations";
 import { NavComponent } from './nav/nav.component'
 import { FormsModule } from '@angular/forms';
@@ -17,6 +18,9 @@ import { ListsComponent } from './lists/lists.component';
 import { MessagesComponent } from './messages/messages.component';
 import { FontAwesomeModule } from '@fortawesome/angular-fontawesome';
 import { SharedModule } from './_modules/shared.module';
+import { TextErrorsComponent } from './errors/text-errors/text-errors.component';
+import { NotFoundComponent } from './errors/not-found/not-found.component';
+import { ServerErrorComponent } from './errors/server-error/server-error.component';
 
 
 // This is the main modul of the app
@@ -30,7 +34,10 @@ import { SharedModule } from './_modules/shared.module';
     MemberListComponent,
     MemberDetailComponent,
     ListsComponent,
-    MessagesComponent
+    MessagesComponent,
+    TextErrorsComponent,
+    NotFoundComponent,
+    ServerErrorComponent
   ],
   // Import another modules
   imports: [
@@ -43,7 +50,8 @@ import { SharedModule } from './_modules/shared.module';
     SharedModule
   ],
   providers: [
-    AccountService
+    AccountService,
+    {provide: HTTP_INTERCEPTORS, useClass: ErrorInterceptor, multi: true}
   ],
   bootstrap: [AppComponent]
 })

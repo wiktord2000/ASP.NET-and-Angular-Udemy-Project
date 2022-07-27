@@ -1,3 +1,6 @@
+import { ServerErrorComponent } from './errors/server-error/server-error.component';
+import { NotFoundComponent } from './errors/not-found/not-found.component';
+import { TextErrorsComponent } from './errors/text-errors/text-errors.component';
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
 import { HomeComponent } from './home/home.component';
@@ -23,7 +26,11 @@ const routes: Routes = [
     ]
 
   },
-  {path: '**' , component: HomeComponent, pathMatch: 'full'},
+  {path: 'errors' , component: TextErrorsComponent},
+  {path: 'not-found', component: NotFoundComponent},
+  {path: 'server-error', component: ServerErrorComponent},
+  // When route doean't exist at all - redirect
+  {path: '**' , component: NotFoundComponent, pathMatch: 'full'},
 ];
 
 @NgModule({
