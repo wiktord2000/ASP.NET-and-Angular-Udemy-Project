@@ -8,6 +8,8 @@ using API.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using AutoMapper;
+using API.Helpers;
 
 namespace API.Extensions
 {
@@ -20,12 +22,20 @@ namespace API.Extensions
             // We use services.addScoped - service is creating only to work with particular http requst
             services.AddScoped<ITokenService, TokenService>();    // we could only create class TokenService but for the testing purpose we should create also interface
             
+            // Add repository
+            services.AddScoped<IUserRepository, UserRepository>();
+
+            // Add AutoMapper
+            services.AddAutoMapper(typeof(AutoMapperProfiles).Assembly);
+            
             // Provide connection with database
             services.AddDbContext<DataContext>(options => 
             {
                 // Place for connection string (taks the specific section from configuration file: appsettings.Developement.json)
                 options.UseSqlite(config.GetConnectionString("DefaultConnection"));
             });
+
+
 
             return services;
         }
