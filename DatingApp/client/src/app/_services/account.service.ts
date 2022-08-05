@@ -1,6 +1,7 @@
+import { environment } from './../../environments/environment';
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
-import { Observable, ReplaySubject } from 'rxjs';
+import { ReplaySubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 import { User } from '../_models/user';
 
@@ -13,7 +14,7 @@ import { User } from '../_models/user';
 // Services support Singleton approach so they are present until the app close down
 export class AccountService {
 
-  baseUrl = 'https://localhost:5001/api/';
+  baseUrl = environment.apiUrl;
   // Subject with buffer size (number of elements)
   private currentUserSource = new ReplaySubject<User>(1);
   // Possibility to subscribe
