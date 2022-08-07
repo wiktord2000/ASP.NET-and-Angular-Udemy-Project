@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Security.Claims;
 using System.Threading.Tasks;
 using API.Data;
 using API.DTOs;
@@ -31,9 +32,9 @@ namespace API.Controllers
         // [HttpGet]
         // // Method returning all users (we could place List instead IEnumerable but the second option is better, )
         // public ActionResult<IEnumerable<AppUser>> GetUsers(){
-            
         //     return _context.Users.ToList();
         // }
+
 
         // Async version
         [HttpGet]
@@ -60,6 +61,27 @@ namespace API.Controllers
             // Old approach -----------------------------------------------------------------------------
             // var user =  await _userRepository.GetUserByUsernameAsync(username);
             // return _mapper.Map<MemberDto>(user);
+        }
+
+        [HttpPut]
+        public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto){
+
+            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+            var user = await _userRepository.GetUserByUsernameAsync(username);
+
+            // -- Instead manualy mapping (updating particular props)
+            // user.City = memberUpdateDto.City;
+            // user.Country = memberUpdateDto.Country;
+            // -- Map using automapper
+            _mapper.Map(memberUpdateDto, user);
+
+            // Flag changes
+            _userRepository.Update(user);
+            
+            // Save changes in db
+            if(await _userRepository.SaveAllAsync()) return NoContent();
+            // If fail
+            return BadRequest("Failed to update user");
         }
     }
 }

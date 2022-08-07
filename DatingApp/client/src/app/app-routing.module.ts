@@ -1,3 +1,5 @@
+import { PreventUnsavedChangesGuard } from './_guards/prevent-unsaved-changes.guard';
+import { MemberEditComponent } from './members/member-edit/member-edit.component';
 import { ServerErrorComponent } from './errors/server-error/server-error.component';
 import { NotFoundComponent } from './errors/not-found/not-found.component';
 import { TextErrorsComponent } from './errors/text-errors/text-errors.component';
@@ -19,8 +21,10 @@ const routes: Routes = [
     canActivate: [AuthGuard],
     children: [
 
-      {path: 'members' , component: MemberListComponent, canActivate: [AuthGuard]},
+      {path: 'members' , component: MemberListComponent},
       {path: 'members/:username' , component: MemberDetailComponent},
+      // {path: 'members/edit' , component: MemberDetailComponent, pathMatch: 'full'}, -> If we want to have fath members/edit instead member/edit
+      {path: 'member/edit' , component: MemberEditComponent, canDeactivate: [PreventUnsavedChangesGuard]},
       {path: 'lists' , component: ListsComponent},
       {path: 'messages' , component: MessagesComponent},
     ]
