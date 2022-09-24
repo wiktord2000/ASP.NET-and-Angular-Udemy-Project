@@ -7,6 +7,7 @@ using API.Interfaces;
 using CloudinaryDotNet;
 using CloudinaryDotNet.Actions;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http;
 
 namespace API.Services
 {

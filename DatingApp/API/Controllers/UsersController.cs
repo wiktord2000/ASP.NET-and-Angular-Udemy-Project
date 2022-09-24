@@ -6,11 +6,13 @@ using System.Threading.Tasks;
 using API.Data;
 using API.DTOs;
 using API.Entities;
+using API.Extensions;
 using API.Interfaces;
 using AutoMapper;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Http;
 
 namespace API.Controllers
 {   
@@ -20,9 +22,11 @@ namespace API.Controllers
     {
         private readonly IUserRepository _userRepository;
         private readonly IMapper _mapper;
+        private readonly IPhotoService _photoService;
 
-        public UsersController(IUserRepository userRepository, IMapper mapper)
+        public UsersController(IUserRepository userRepository, IMapper mapper, IPhotoService photoService)
         {
+            _photoService = photoService;
             _mapper = mapper;
             _userRepository = userRepository;
         }
@@ -51,8 +55,8 @@ namespace API.Controllers
             // return  Ok(userToReturn);
         }
 
-        // This method get data about specific user using e.g. api/users/3
-        [HttpGet("{username}")]
+        // This method get data about specific user using e.g. api/users/gloria
+        [HttpGet("{username}", Name = "GetUser")]
         // Method returning all users (we could place List instead IEnumerable but the second option is better, )
         public async Task<ActionResult<MemberDto>> GetUser(string username){
             
@@ -66,8 +70,7 @@ namespace API.Controllers
         [HttpPut]
         public async Task<ActionResult> UpdateUser(MemberUpdateDto memberUpdateDto){
 
-            var username = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var user = await _userRepository.GetUserByUsernameAsync(username);
+            var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
 
             // -- Instead manualy mapping (updating particular props)
             // user.City = memberUpdateDto.City;
@@ -83,5 +86,77 @@ namespace API.Controllers
             // If fail
             return BadRequest("Failed to update user");
         }
+
+
+        [HttpPost("add-photo")]
+        public async Task<ActionResult<PhotoDto>> AddPhoto(IFormFile file){
+
+            // Gets the user's object from database
+            var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
+
+            // Sending the given photo and waiting for response 
+            var result = await _photoService.AddPhotoAsync(file);
+            if(result.Error != null) return BadRequest(result.Error.Message);
+
+            // Preparing photo object
+            var photo = new Photo
+            {
+                Url = result.SecureUrl.AbsoluteUri,
+                PublicId = result.PublicId
+            };
+            // Make main if user has no photos
+            if(user.Photos.Count == 0) photo.IsMain = true;
+            
+            // Add photo to db and save changes
+            user.Photos.Add(photo);
+            
+            if(await _userRepository.SaveAllAsync())
+            {
+                // _mapper.Map<PhotoDto>(photo) returns PhotoDto so only 3 props
+                // GetUser - is the reference to the route which is needed to obtain the userDto 
+                // 1. appraoch return CreatedAtRoute("GetUser", _mapper.Map<PhotoDto>(photo)); -> this didn't work because route require the username parameter !!!
+                return CreatedAtRoute("GetUser", new {username = user.UserName} , _mapper.Map<PhotoDto>(photo));
+            }
+            return BadRequest("Problem adding photo");
+        }
+
+        [HttpPut("set-main-photo/{photoId}")]
+        public async Task<ActionResult> SetMainPhoto(int photoId){
+
+            // We sending this request with token assigned to logged user (username) so pass here another person will not be processed
+            var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
+
+            // Not async because we points to obtained user
+            var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+            if(photo.IsMain) return BadRequest("This is already your main photo");
+            var currentMain = user.Photos.FirstOrDefault(x => x.IsMain);
+            if(currentMain != null) currentMain.IsMain = false; 
+            photo.IsMain = true;
+
+            if(await _userRepository.SaveAllAsync()) return NoContent();
+
+            return BadRequest("Failed to set main photo");
+        }
+
+        [HttpDelete("delete-photo/{photoId}")]
+        public async Task<ActionResult> DeletePhoto(int photoId){
+
+            var user = await _userRepository.GetUserByUsernameAsync(User.GetUsername());
+            var photo = user.Photos.FirstOrDefault(x => x.Id == photoId);
+
+            if (photo == null) return NotFound();
+            if (photo.IsMain) return BadRequest("You can't delete your main photo");
+            if(photo.PublicId != null){
+                // result from cloudnery
+                var result = await _photoService.DeletePhotoAsync(photo.PublicId);
+                if(result.Error != null) return BadRequest(result.Error.Message);
+            }
+
+            // server update
+            user.Photos.Remove(photo);
+            if(await _userRepository.SaveAllAsync()) return Ok();
+            return BadRequest("Problem with delete photo");
+        }
+
     }
 }
